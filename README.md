@@ -4,6 +4,11 @@ Sane way to extract/view archived contents.
 Vert will detect whether or not an archive file is nested inside a directory and
 create a directory before extracting if there isn't.
 
+## Technical Details
+Vert simply checks whether or not the root of the archive's source tree is a
+single file/directory to judge if it should create a directory to nest the
+contents into.
+
 # How To Install
 ```bash
 git clone --depth 1 --branch main https://github.com/eeriemyxi/vert
