@@ -95,7 +95,7 @@ def _zip_extract_file(zip_, dest):
 
 
 def _tar_extract_file(tar, dest):
-    tar.extractall(path=dest)
+    tar.extractall(path=dest, filter="data")
 
 
 def extract_archive(args):
