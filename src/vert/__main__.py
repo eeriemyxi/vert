@@ -78,7 +78,7 @@ def list_contents(args) -> None:
         with module.ZipFile(file, "r") as zip_:
             _zip_list_contents(zip_)
     elif file_suffix in (SupportedType.TARGZ, SupportedType.TARXZ):
-        with module.open(file, f"r:{_extract_compression(suffix)}") as tar:
+        with module.open(file, f"r:{_extract_compression(file_suffix)}") as tar:
             _tar_list_contents(tar)
 
 
