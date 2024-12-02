@@ -1,6 +1,6 @@
 [project]
 name = "vert"
-version = "0.1.1"
+version = "0.2.0"
 description = "Sane way to extract/view archived contents."
 authors = [
     { name = "myxi", email = "myxi@envs.net" }
