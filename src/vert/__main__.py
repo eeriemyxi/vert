@@ -38,6 +38,9 @@ def _name_without_suffix(name: str):
 
 
 def _should_use_external_tools() -> bool:
+    # INFO: Python doesn't reload the module if you do this, so there is no
+    # overhead involved on repeating calls. 
+    # See: https://docs.python.org/3/library/sys.html#sys.modules
     import os
 
     return (
