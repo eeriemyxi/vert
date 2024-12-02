@@ -1,13 +1,12 @@
-import os
 import argparse
-import enum
 import logging
 import pathlib
+from enum import Enum
 
 log = logging.getLogger(__file__)
 
 
-class SupportedType(enum.Enum):
+class SupportedType(Enum):
     ZIP = ".zip"
     TARXZ = ".tar.xz"
     TARGZ = ".tar.gz"
@@ -39,7 +38,11 @@ def _name_without_suffix(name: str):
 
 
 def _should_use_external_tools() -> bool:
-    return os.environ.get("VERT_USE_EXTERNAL_TOOLS", "false").casefold() == "true"
+    import os
+
+    return (
+        os.environ.get("VERT_USE_EXTERNAL_TOOLS", "false").strip().casefold() == "true"
+    )
 
 
 def _import_correct_mod(file: pathlib.Path):
