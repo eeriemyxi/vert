@@ -90,11 +90,23 @@ def list_contents(file) -> None:
 
 
 def _zip_is_nested(zip_):
-    return len(zip_.namelist()) == 1
+    rc_count = 0
+    for x in zip_.namelist():
+        if "/" not in x:
+            rc_count += 1
+        if rc_count > 1:
+            return False
+    return True
 
 
 def _tar_is_nested(tar):
-    return len(tar.getnames()) == 1
+    rc_count = 0
+    for x in tar.getnames():
+        if "/" not in x:
+            rc_count += 1
+        if rc_count > 1:
+            return False
+    return True
 
 
 def _print_extraction_info(dest):
