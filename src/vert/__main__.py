@@ -23,7 +23,7 @@ class SupportedType(enum.Enum):
 
 
 def _joined_suffix(path: pathlib.Path) -> str:
-    return "".join(path.suffixes)
+    return "".join(path.suffixes[-2:])
 
 
 def _check_suffix(path: pathlib.Path, suffix: str | list[str] | tuple[str]):
