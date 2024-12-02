@@ -46,7 +46,7 @@ them into a directory `myzip`, `myzip2`, and `myzip3`.
 
 # Command-line Arguments
 ```
-usage: vert [-h] [--log-level LOG_LEVEL] {x,l} ...
+usage: vert [-h] [--log-level LOG_LEVEL] [-v] {x,l} ...
 
 Vert - Sane way to extract/view archived contents.
 
@@ -59,4 +59,5 @@ options:
   -h, --help            show this help message and exit
   --log-level LOG_LEVEL
                         Set log level. Options: DEBUG, INFO (default), CRITICAL, ERROR
+  -v, --version         See current version.
 ```

@@ -168,6 +168,9 @@ def cmd_extract_archives(args):
             continue
         extract_archive(file)
 
+def _show_version():
+    import importlib.metadata
+    print(importlib.metadata.version("vert"))
 
 LOG_LEVEL = "INFO"
 
@@ -182,6 +185,11 @@ parser.add_argument(
     default="INFO",
 )
 
+parser.add_argument(
+    "-v", "--version",
+    help="See current version.",
+    action="store_true",
+)
 subparsers = parser.add_subparsers()
 
 parser_extract = subparsers.add_parser(
@@ -206,6 +214,10 @@ logging.basicConfig(
     format="%(levelname)s: [%(asctime)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+if args.version:
+    _show_version()
+    exit()
 
 if not hasattr(args, "func"):
     parser.print_help()
