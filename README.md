@@ -4,6 +4,13 @@ Sane way to extract/view archived contents.
 Vert will detect whether or not an archive file is nested inside a directory and
 create a directory before extracting if there isn't.
 
+> [!WARNING] 
+> By default Vert uses Python's in-built libraries for extraction. If
+> you'd like you may use external tools like `tar` and `unzip` instead. Please
+> see [Configuration](#configuration) section. While I have made efforts to
+> safely use these libraries, they are still always more likely to have
+> vulnerabilities than mature tools like `tar` and `unzip`.
+
 ## Technical Details
 Vert simply checks whether or not the root of the archive's source tree is a
 single file/directory to judge if it should create a directory to nest the
@@ -18,18 +25,24 @@ Or,
 ```
 pip install git+https://github.com//eeriemyxi/vert@main
 ```
+# Configuration
+By default it uses `tarfile` and `zipfile` modules from Python's standard
+library to extract content. If you'd like to use `tar` and `zipfile` utilities
+instead, then you can set `VERT_USE_EXTERNAL_TOOLS` environment variable to
+`"true"`; setting it to anything else will mean `"false"`, but that may change
+later so your safest bet is to set it to "false" if you want to turn it off.
 
 # Usage
 ```bash
-vert l myzip.{zip,tar.gz,tar.xz}
+vert l myzip.zip myzip2.tar.xz myzip3.tar.gz
 ```
-View the contents of the archive.
+View the contents of the archives.
 
 ```bash
-vert x myzip.{zip,tar.gz,tar.xz}
+vert x myzip.zip myzip2.tar.xz myzip3.tar.gz
 ```
-Extract the contents of the archive. If the contents are not nested then it will extract
-them into a directory `myzip`.
+Extract the contents of the archives. If the contents are not nested then it will extract
+them into a directory `myzip`, `myzip2`, and `myzip3`.
 
 # Command-line Arguments
 ```

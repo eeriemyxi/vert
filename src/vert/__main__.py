@@ -1,6 +1,6 @@
+import os
 import argparse
 import enum
-import importlib
 import logging
 import pathlib
 
@@ -38,7 +38,13 @@ def _name_without_suffix(name: str):
     return name.rsplit(".", maxsplit=2)[0]
 
 
+def _should_use_external_tools() -> bool:
+    return os.environ.get("VERT_USE_EXTERNAL_TOOLS", "false").casefold() == "true"
+
+
 def _import_correct_mod(file: pathlib.Path):
+    import importlib
+
     log.debug(f"{file.suffix=}")
 
     if _check_suffix(file, (".tar.gz", ".tar.xz")):
@@ -48,7 +54,7 @@ def _import_correct_mod(file: pathlib.Path):
         log.debug("Importing zipfile module")
         module = importlib.import_module("zipfile")
     else:
-        log.critical("Unsupported file format: %s", _joined_suffix(file))
+        log.critical("Unsupported file format: '%s'", _joined_suffix(file))
         exit(1)
 
     return module, SupportedType.from_str(_joined_suffix(file))
@@ -68,8 +74,9 @@ def _tar_list_contents(tar):
     tar.list()
 
 
-def list_contents(args) -> None:
-    file = args.file.resolve()
+def list_contents(file) -> None:
+    log.info("Listing contents for '%s'", file)
+    file = file.resolve()
     module, file_suffix = _import_correct_mod(file)
     log.debug(f"{module=}")
     log.debug(f"{file_suffix=}")
@@ -90,16 +97,37 @@ def _tar_is_nested(tar):
     return len(tar.getnames()) == 1
 
 
-def _zip_extract_file(zip_, dest):
+def _print_extraction_info(dest):
+    log.info("Contents will be extracted to '%s'", dest.relative_to(pathlib.Path.cwd()))
+
+
+def _zip_extract_file(zip_, file, dest):
+    dest.mkdir(exist_ok=True)
+    
+    _print_extraction_info(dest)
+    if _should_use_external_tools():
+        import subprocess
+
+        subprocess.run(["unzip", file, "-d", dest])
+        return
     zip_.extractall(path=dest)
 
 
-def _tar_extract_file(tar, dest):
+def _tar_extract_file(tar, file, dest):
+    dest.mkdir(exist_ok=True)
+    
+    _print_extraction_info(dest)
+    if _should_use_external_tools():
+        import subprocess
+
+        subprocess.run(["tar", "-xf", file, "--directory", dest])
+        return
     tar.extractall(path=dest, filter="data")
 
 
-def extract_archive(args):
-    file = args.file.resolve()
+def extract_archive(file):
+    log.info("Extracting contents of '%s'", file)
+    file = file.resolve()
     cwd = pathlib.Path.cwd()
     module, file_suffix = _import_correct_mod(file)
     log.debug(f"{module=}")
@@ -110,6 +138,7 @@ def extract_archive(args):
         with module.ZipFile(file, "r") as zip_:
             _zip_extract_file(
                 zip_,
+                file,
                 cwd if _zip_is_nested(zip_) else cwd / _name_without_suffix(file.name),
             )
     elif file_suffix in (SupportedType.TARGZ, SupportedType.TARXZ):
@@ -117,8 +146,27 @@ def extract_archive(args):
         with module.open(file, f"r:{_extract_compression(file_suffix)}") as tar:
             _tar_extract_file(
                 tar,
+                file,
                 cwd if _tar_is_nested(tar) else cwd / _name_without_suffix(file.name),
             )
+
+
+def cmd_list_contents(args):
+    for file in args.files:
+        if not file.exists():
+            log.critical(f"File '{file}' doesn't exist. Skipping...")
+            continue
+        list_contents(file)
+
+
+def cmd_extract_archives(args):
+    if _should_use_external_tools():
+        log.info("Using external tools `tar` or `unzip` for extraction...")
+    for file in args.files:
+        if not file.exists():
+            log.critical(f"File '{file}' doesn't exist. Skipping...")
+            continue
+        extract_archive(file)
 
 
 LOG_LEVEL = "INFO"
@@ -140,15 +188,15 @@ parser_extract = subparsers.add_parser(
     "x",
     help=f"Extract contents of the archive (in a sane way).",
 )
-parser_extract.add_argument("file", type=pathlib.Path)
-parser_extract.set_defaults(func=extract_archive)
+parser_extract.add_argument("files", type=pathlib.Path, nargs="+")
+parser_extract.set_defaults(func=cmd_extract_archives)
 
 parser_list = subparsers.add_parser(
     "l",
     help=f"List contents of the archive.",
 )
-parser_list.add_argument("file", type=pathlib.Path)
-parser_list.set_defaults(func=list_contents)
+parser_list.add_argument("files", type=pathlib.Path, nargs="+")
+parser_list.set_defaults(func=cmd_list_contents)
 
 args = parser.parse_args()
 LOG_LEVEL = args.log_level
