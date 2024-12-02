@@ -115,7 +115,7 @@ def _print_extraction_info(dest):
 
 def _zip_extract_file(zip_, file, dest):
     dest.mkdir(exist_ok=True)
-    
+
     _print_extraction_info(dest)
     if _should_use_external_tools():
         import subprocess
@@ -127,7 +127,7 @@ def _zip_extract_file(zip_, file, dest):
 
 def _tar_extract_file(tar, file, dest):
     dest.mkdir(exist_ok=True)
-    
+
     _print_extraction_info(dest)
     if _should_use_external_tools():
         import subprocess
@@ -180,9 +180,12 @@ def cmd_extract_archives(args):
             continue
         extract_archive(file)
 
+
 def _show_version():
     import importlib.metadata
+
     print(importlib.metadata.version("vert"))
+
 
 LOG_LEVEL = "INFO"
 
@@ -198,7 +201,8 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "-v", "--version",
+    "-v",
+    "--version",
     help="See current version.",
     action="store_true",
 )
