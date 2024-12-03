@@ -244,8 +244,8 @@ LOG_LEVEL = args.log_level
 
 logging.basicConfig(
     level=LOG_LEVEL,
-    format="%(levelname)s: [%(asctime)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+    format="[%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt="%H:%M:%S",
 )
 
 if args.version:
