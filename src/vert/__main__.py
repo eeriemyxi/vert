@@ -210,6 +210,7 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
+    "-L",
     "--log-level",
     help="Set log level. Options: DEBUG, INFO (default), CRITICAL, ERROR",
     type=str,
