@@ -39,7 +39,7 @@ def _name_without_suffix(name: str):
 
 def _should_use_external_tools() -> bool:
     # INFO: Python doesn't reload the module if you do this, so there is no
-    # overhead involved on repeating calls. 
+    # overhead involved on repeating calls.
     # See: https://docs.python.org/3/library/sys.html#sys.modules
     import os
 
@@ -48,22 +48,17 @@ def _should_use_external_tools() -> bool:
     )
 
 
-def _import_correct_mod(file: pathlib.Path):
-    import importlib
-
+def _import_backend(file: pathlib.Path, file_type: SupportedType):
     log.debug(f"{file.suffix=}")
 
-    if _check_suffix(file, (".tar.gz", ".tar.xz")):
+    if file_type in (SupportedType.TARGZ, SupportedType.TARXZ):
         log.debug("Importing tarfile module")
-        module = importlib.import_module("tarfile")
-    elif _check_suffix(file, ".zip"):
+        import tarfile as module
+    elif file_type is SupportedType.ZIP:
         log.debug("Importing zipfile module")
-        module = importlib.import_module("zipfile")
-    else:
-        log.critical("Unsupported file format: '%s'", _joined_suffix(file))
-        exit(1)
+        import zipfile as module
 
-    return module, SupportedType.from_str(_joined_suffix(file))
+    return module
 
 
 def _extract_compression(suffix: str | SupportedType):
@@ -82,16 +77,23 @@ def _tar_list_contents(tar):
 
 def list_contents(file) -> None:
     log.info("Listing contents for '%s'", file)
-    file = file.resolve()
-    module, file_suffix = _import_correct_mod(file)
-    log.debug(f"{module=}")
-    log.debug(f"{file_suffix=}")
 
-    if file_suffix is SupportedType.ZIP:
+    file = file.resolve()
+    file_type = SupportedType.from_str(_joined_suffix(file))
+    if not file_type:
+        log.critical("Unsupported file format: '%s'", _joined_suffix(file))
+        exit(1)
+
+    module = _import_backend(file, file_type)
+
+    log.debug(f"{module=}")
+    log.debug(f"{file_type=}")
+
+    if file_type is SupportedType.ZIP:
         with module.ZipFile(file, "r") as zip_:
             _zip_list_contents(zip_)
-    elif file_suffix in (SupportedType.TARGZ, SupportedType.TARXZ):
-        with module.open(file, f"r:{_extract_compression(file_suffix)}") as tar:
+    elif file_type in (SupportedType.TARGZ, SupportedType.TARXZ):
+        with module.open(file, f"r:{_extract_compression(file_type)}") as tar:
             _tar_list_contents(tar)
 
 
@@ -145,13 +147,21 @@ def _tar_extract_file(tar, file, dest):
 
 def extract_archive(file):
     log.info("Extracting contents of '%s'", file)
+
     file = file.resolve()
     cwd = pathlib.Path.cwd()
-    module, file_suffix = _import_correct_mod(file)
-    log.debug(f"{module=}")
-    log.debug(f"{file_suffix=}")
 
-    if file_suffix is SupportedType.ZIP:
+    file_type = SupportedType.from_str(_joined_suffix(file))
+    if not file_type:
+        log.critical("Unsupported file format: '%s'", _joined_suffix(file))
+        exit(1)
+
+    module = _import_backend(file, file_type)
+
+    log.debug(f"{module=}")
+    log.debug(f"{file_type=}")
+
+    if file_type is SupportedType.ZIP:
         assert module.is_zipfile(file), f"improper zip file: {file}"
         with module.ZipFile(file, "r") as zip_:
             _zip_extract_file(
@@ -159,9 +169,9 @@ def extract_archive(file):
                 file,
                 cwd if _zip_is_nested(zip_) else cwd / _name_without_suffix(file.name),
             )
-    elif file_suffix in (SupportedType.TARGZ, SupportedType.TARXZ):
+    elif file_type in (SupportedType.TARGZ, SupportedType.TARXZ):
         assert module.is_tarfile(file), f"improper tar file: {file}"
-        with module.open(file, f"r:{_extract_compression(file_suffix)}") as tar:
+        with module.open(file, f"r:{_extract_compression(file_type)}") as tar:
             _tar_extract_file(
                 tar,
                 file,
