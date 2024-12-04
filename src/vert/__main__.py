@@ -183,7 +183,7 @@ def extract_archive(file):
             _tar_extract_file(
                 tar,
                 file,
-                cwd if _tar_is_nested(tar) else cwd / name_without_suffix(file.name),
+                cwd if _tar_is_nested(tar) else cwd / _name_without_suffix(file.name),
             )
     log.info(f"Finished extracting '%s'", file.relative_to(cwd))
 
