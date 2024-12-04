@@ -98,6 +98,7 @@ def list_contents(file) -> None:
 
 
 def _zip_is_nested(zip_):
+    log.info("Checking if the contents are nested. This can take some time...")
     rc_count = 0
     for x in zip_.namelist():
         if "/" not in x:
@@ -108,6 +109,7 @@ def _zip_is_nested(zip_):
 
 
 def _tar_is_nested(tar):
+    log.info("Checking if the contents are nested. This can take some time...")
     rc_count = 0
     for x in tar.getnames():
         if "/" not in x:
@@ -177,6 +179,7 @@ def extract_archive(file):
                 file,
                 cwd if _tar_is_nested(tar) else cwd / _name_without_suffix(file.name),
             )
+    log.info(f"Finished extracting '%s'", file.relative_to(cwd))
 
 
 def cmd_list_contents(args):
