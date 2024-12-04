@@ -99,9 +99,10 @@ def list_contents(file) -> None:
 
 def _zip_is_nested(zip_):
     log.info("Checking if the contents are nested. This can take some time...")
+    import zipfile
     rc_count = 0
-    for x in zip_.namelist():
-        if "/" not in x:
+    for x in zipfile.Path(zip_).iterdir():
+        if "/" not in x.name:
             rc_count += 1
         if rc_count > 1:
             return False
@@ -111,8 +112,8 @@ def _zip_is_nested(zip_):
 def _tar_is_nested(tar):
     log.info("Checking if the contents are nested. This can take some time...")
     rc_count = 0
-    for x in tar.getnames():
-        if "/" not in x:
+    for x in tar:
+        if "/" not in x.name:
             rc_count += 1
         if rc_count > 1:
             return False
@@ -124,6 +125,7 @@ def _print_extraction_info(dest):
 
 
 def _zip_extract_file(zip_, file, dest):
+    log.debug("Called _zip_extract_file")
     dest.mkdir(exist_ok=True)
 
     _print_extraction_info(dest)
@@ -136,6 +138,7 @@ def _zip_extract_file(zip_, file, dest):
 
 
 def _tar_extract_file(tar, file, dest):
+    log.debug("Called _tar_extract_file")
     dest.mkdir(exist_ok=True)
 
     _print_extraction_info(dest)
@@ -144,6 +147,7 @@ def _tar_extract_file(tar, file, dest):
 
         subprocess.run(["tar", "-xf", file, "--directory", dest])
         return
+    log.debug(f"Extracting contents of {file=} to {dest=}")
     tar.extractall(path=dest, filter="data")
 
 
@@ -173,11 +177,13 @@ def extract_archive(file):
             )
     elif file_type in (SupportedType.TARGZ, SupportedType.TARXZ):
         assert module.is_tarfile(file), f"improper tar file: {file}"
+        log.debug(f"Opening file {file=}")
         with module.open(file, f"r:{_extract_compression(file_type)}") as tar:
+            log.debug(f"Opened file {file=}")
             _tar_extract_file(
                 tar,
                 file,
-                cwd if _tar_is_nested(tar) else cwd / _name_without_suffix(file.name),
+                cwd if _tar_is_nested(tar) else cwd / name_without_suffix(file.name),
             )
     log.info(f"Finished extracting '%s'", file.relative_to(cwd))
 
