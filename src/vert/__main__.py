@@ -10,7 +10,14 @@ class SupportedType(Enum):
     ZIP = ".zip"
     TARXZ = ".tar.xz"
     TARGZ = ".tar.gz"
-
+    # Other common compound compressed-file suffixes, commented out because not yet supported.
+    # TARBZ2 = ".tar.bz2"
+    # TARZST = ".tar.zst"
+    # TARLZ = ".tar.lz"
+    # TARLZMA = ".tar.lzma"
+    # TARZ = ".tar.Z"
+    # TAR7Z = ".tar.7z"
+    
     @classmethod
     def from_str(cls, type_s: str):
         if type_s == ".zip":
@@ -20,10 +27,11 @@ class SupportedType(Enum):
         elif type_s == ".tar.gz":
             return cls.TARGZ
 
-
 def _joined_suffix(path: pathlib.Path) -> str:
-    return "".join(path.suffixes[-2:])
-
+    suffix = "".join(path.suffixes[-2:])
+    if suffix in SupportedType._value2member_map_:
+        return suffix
+    return path.suffix
 
 def _check_suffix(path: pathlib.Path, suffix: str | list[str] | tuple[str]):
     suffixes = _joined_suffix(path)
@@ -185,7 +193,11 @@ def extract_archive(file):
                 file,
                 cwd if _tar_is_nested(tar) else cwd / _name_without_suffix(file.name),
             )
-    log.info(f"Finished extracting '%s'", file.relative_to(cwd))
+    try:
+        relative_file = file.relative_to(cwd)
+    except ValueError:
+        relative_file = file
+    log.info(f"Finished extracting '%s'", relative_file)
 
 
 def cmd_list_contents(args):
