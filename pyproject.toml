@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">= 3.8"
 
 [project.scripts]
-vert = "vert.__main__:main"
+vert = "vert:main"
 
 [build-system]
 requires = ["hatchling"]
