@@ -97,7 +97,7 @@ def list_contents(file) -> None:
     try:
         filename, file_type = _split_filename(list(SupportedType), file)
     except ValueError:
-        log.critical("Unsupported file format: '%s'", _joined_suffix(file))
+        log.critical("Unsupported file format: '%s'", file_type)
         exit(1)
     else:
         file_type = SupportedType.from_str(file_type)
@@ -180,7 +180,7 @@ def extract_archive(file):
     try:
         filename, file_type = _split_filename(list(SupportedType), file)
     except ValueError:
-        log.critical("Unsupported file format: '%s'", _joined_suffix(file))
+        log.critical("Unsupported file format: '%s'", file_type)
         exit(1)
     else:
         file_type = SupportedType.from_str(file_type)
