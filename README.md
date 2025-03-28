@@ -29,8 +29,7 @@ pip install git+https://github.com/eeriemyxi/vert@main
 By default it uses `tarfile` and `zipfile` modules from Python's standard
 library to extract content. If you'd like to use `tar` and `unzip` utilities
 instead, then you can set `VERT_USE_EXTERNAL_TOOLS` environment variable to
-`"true"`; setting it to anything else will mean `"false"`, but that may change
-later so your safest bet is to set it to `"false"` if you want to turn it off.
+`"true"`; setting it to anything else will mean `"false"` (for now.)
 
 # Usage
 ```bash
