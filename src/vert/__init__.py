@@ -1,12 +1,13 @@
 import argparse
 import logging
 import pathlib
-from enum import StrEnum
+import io
+import enum
 
 log = logging.getLogger(__file__)
 
 
-class SupportedType(StrEnum):
+class SupportedType(enum.StrEnum):
     ZIP = ".zip"
     TARXZ = ".tar.xz"
     TARGZ = ".tar.gz"
@@ -21,20 +22,30 @@ class SupportedType(StrEnum):
             return cls.TARGZ
 
 
-def _joined_suffix(path: pathlib.Path) -> str:
-    return "".join(path.suffixes[-2:])
+def _split_filename(supported_formats: list[str], file: pathlib.Path):
+    raw_split = file.name.split(".")
+    name = io.StringIO()
+    suffix = io.StringIO()
+    found_suffix = False
 
+    for i, s in enumerate(reversed(raw_split)):
+        if len(raw_split) - 1 > i:
+            s = "." + s
 
-def _check_suffix(path: pathlib.Path, suffix: str | list[str] | tuple[str]):
-    suffixes = _joined_suffix(path)
-    if isinstance(suffix, str):
-        return suffix == suffixes
-    if isinstance(suffix, list | tuple):
-        return any(_check_suffix(path, s) for s in suffix)
+        if not found_suffix:
+            suffix.seek(0)
+            suffix.write(s + suffix.getvalue())
 
-
-def _name_without_suffix(name: str):
-    return name.rsplit(".", maxsplit=2)[0]
+        if not found_suffix and suffix.getvalue() in supported_formats:
+            found_suffix = True
+        elif found_suffix:
+            name.seek(0)
+            name.write(s + name.getvalue())
+    
+    if not found_suffix:
+        raise ValueError(f"Archive format not supported: {suffix.getvalue()}")
+        
+    return name.getvalue(), suffix.getvalue()
 
 
 def _should_use_external_tools() -> bool:
@@ -61,10 +72,13 @@ def _import_backend(file: pathlib.Path, file_type: SupportedType):
     return module
 
 
-def _extract_compression(suffix: str | SupportedType):
-    if isinstance(suffix, SupportedType):
-        suffix = suffix.value
-    return suffix.split(".")[-1]
+def _extract_compression(suffix: str):
+    splits = suffix.split(".")
+
+    if not len(splits) >= 2:
+        raise ValueError(f"There is no compression to extract for {splits=} from {suffix=}.")
+
+    return splits[-1]
 
 
 def _zip_list_contents(zip_):
@@ -79,10 +93,14 @@ def list_contents(file) -> None:
     log.info("Listing contents for '%s'", file)
 
     file = file.resolve()
-    file_type = SupportedType.from_str(_joined_suffix(file))
-    if not file_type:
+
+    try:
+        filename, file_type = _split_filename(list(SupportedType), file)
+    except ValueError:
         log.critical("Unsupported file format: '%s'", _joined_suffix(file))
         exit(1)
+    else:
+        file_type = SupportedType.from_str(file_type)
 
     module = _import_backend(file, file_type)
 
@@ -112,6 +130,7 @@ def _zip_is_nested(zip_):
 
 def _tar_is_nested(tar):
     log.info("Checking if the contents are nested. This can take some time...")
+
     rc_count = 0
     for x in tar:
         if "/" not in x.name:
@@ -158,10 +177,13 @@ def extract_archive(file):
     file = file.resolve()
     cwd = pathlib.Path.cwd()
 
-    file_type = SupportedType.from_str(_joined_suffix(file))
-    if not file_type:
+    try:
+        filename, file_type = _split_filename(list(SupportedType), file)
+    except ValueError:
         log.critical("Unsupported file format: '%s'", _joined_suffix(file))
         exit(1)
+    else:
+        file_type = SupportedType.from_str(file_type)
 
     module = _import_backend(file, file_type)
 
@@ -174,7 +196,7 @@ def extract_archive(file):
             _zip_extract_file(
                 zip_,
                 file,
-                cwd if _zip_is_nested(zip_) else cwd / _name_without_suffix(file.name),
+                cwd if _zip_is_nested(zip_) else cwd / filename,
             )
     elif file_type in (SupportedType.TARGZ, SupportedType.TARXZ):
         assert module.is_tarfile(file), f"improper tar file: {file}"
@@ -184,7 +206,7 @@ def extract_archive(file):
             _tar_extract_file(
                 tar,
                 file,
-                cwd if _tar_is_nested(tar) else cwd / _name_without_suffix(file.name),
+                cwd if _tar_is_nested(tar) else cwd / filename,
             )
     log.info(f"Finished extracting '%s'", file.relative_to(cwd))
 
